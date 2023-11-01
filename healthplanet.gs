@@ -1,4 +1,4 @@
-const DATE_OF_MEASUREMENT = "1";
+const DATE_OF_MEASUREMENT = "1";  // 測定日付
 const BODY_WEIGHT = "6021";
 const BODY_FAT = "6022";
 
@@ -45,22 +45,53 @@ const hpAuthCallback = (request) => {
 }
 
 /**
- * HealthPlanetから体重データを取得する。
+ * HealthPlanetからヘルスデータを取得する
  */
 const fetchHealthData = (service) => {
-  const payload = {
+  let payload = {
     "access_token": service.getAccessToken(),
     "date": healthPlanet.payloadDate,
-    "tag": healthPlanet.payloadTag,
+    "tag": healthPlanet.payloadTag
   };
+  if (HEALTHDATA_PERIOD != null) {
+    const now = dayjs.dayjs();
+    payload["from"] = now.startOf('day').subtract(HEALTHDATA_PERIOD, 'day').format('YYYYMMDDHHmmss');
+  }
 
   const options = {
     "method": "POST",
-    "payload": payload,
+    "payload": payload
   };
 
   const response = UrlFetchApp.fetch(healthPlanet.innerscanUrl, options);
   console.log(payload);
   console.log(response.getContentText());
   return JSON.parse(response);
+}
+
+/**
+ * ヘルスデータの機器番号から機器名に変換する
+ */
+const getModelName = (healthData) => {
+  const model = healthData.data.slice(-1)[0].model;
+  const name = healthPlanetModels[model];
+  if (!name) {
+    console.log(`Please add "${model}": "YourModelName" to healthPlanetModels{} in models.gs`);
+    return model;
+  }
+  return name;
+}
+
+/**
+ * Health Planet のデータをリストする（開発用）
+ */
+const listHPHelthData = () => {
+  const hpService = getHPService();
+
+  if (hpService.hasAccess()) {
+    const healthData = fetchHealthData(hpService);
+    console.log("Model: " + getModelName(healthData));
+  } else {
+    console.log("Please authorize URL before execute");
+  }
 }

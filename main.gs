@@ -1,7 +1,5 @@
-
 const HTTP_STATUS_CODE_OK = 200;
 const HTTP_STATUS_CODE_CONFLICT = 409;
-const TO_NS = 1000 * 1000 * 1000;
 const property = PropertiesService.getUserProperties();
 
 /**
@@ -50,29 +48,31 @@ const run = () => {
     console.log(/(&state=.*?)&/.exec(hpService.getAuthorizationUrl())[1]);
   }
 
-  const gfService = getGFService();
+  if (REGIST_GOOGLE_FIT) {
+    const gfService = getGFService();
 
-  // GoogleFitへの認証が完了していない場合は認証用URLを出力して終了する
-  if (gfService.hasAccess()) {
-    console.log("GoogleFit is ready");
-    createGFDataSource(gfService, googleFit.weight);
-    createGFDataSource(gfService, googleFit.fat);
-    postHealthData(gfService, googleFit.weight, healthData);
-    postHealthData(gfService, googleFit.fat, healthData);
-  } else {
-    console.log("Please go to the URL below to complete the authentication with GoogleFit");
-    console.log(gfService.getAuthorizationUrl());
+    // GoogleFitへの認証が完了していない場合は認証用URLを出力して終了する
+    if (gfService.hasAccess()) {
+      console.log("GoogleFit is ready");
+      postGFHealthData(gfService, googleFit.weight, healthData);
+      postGFHealthData(gfService, googleFit.fat, healthData);
+    } else {
+      console.log("Please go to the URL below to complete the authentication with GoogleFit");
+      console.log(gfService.getAuthorizationUrl());
+    }
   }
 
-  const fbService = getFBService();
+  if (REGIST_FITBIT) {
+    const fbService = getFBService();
 
-  // Fitbitへの認証が完了していない場合は認証用URLを出力して終了する
-  if (fbService.hasAccess()) {
-    console.log("Fitbit is ready");
-    fbPostHealthData(fbService,healthData);
-  } else {
-    console.log("Please go to the URL below to complete the authentication with Fitbit");
-    console.log(fbService.getAuthorizationUrl());
+    // Fitbitへの認証が完了していない場合は認証用URLを出力して終了する
+    if (fbService.hasAccess()) {
+      console.log("Fitbit is ready");
+      fbPostHealthData(fbService, healthData);
+    } else {
+      console.log("Please go to the URL below to complete the authentication with Fitbit");
+      console.log(fbService.getAuthorizationUrl());
+    }
   }
 }
 
@@ -82,8 +82,12 @@ const run = () => {
  */
 const logoutFromService = () => {
   getHPService().reset();
-  getGFService().reset();
-  getFBService().reset();
+  if (REGIST_GOOGLE_FIT) {
+    getGFService().reset();
+  }
+  if (REGIST_FITBIT) {
+    getFBService().reset();
+  }
   property.deleteAllProperties();
   console.log("Logged out successfully")
 }

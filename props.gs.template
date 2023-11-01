@@ -1,11 +1,16 @@
-
-const SCALE_MODEL = "BC-333L";
+const HEALTHDATA_PERIOD = 7;    // 最大限のデータを取得する場合は null を指定
+const REGIST_GOOGLE_FIT = true;
+const REGIST_FITBIT = false;
 
 const HEALTHPLANET_API_CLIENT_ID = "*****";
 const HEALTHPLANET_API_CLIENT_SECRET = "*****";
 
 const GOOGLE_API_CLIENT_ID = "*****";
 const GOOGLE_API_CLIENT_SECRET = "*****";
+const GOOGLE_FIT_DATASTREAM_NAME = "TanitaScales";
+const GOOGLE_FIT_APP_NAME = "Health Planet Transmitter";
+const GOOGLE_FIT_DEVICE_UID = "1000001";    // 本来はシリアル番号等
+const GOOGLE_FIT_DEVICE_VERSION = "1.0";
 
 const FITBIT_API_CLIENT_ID = "*****";
 const FITBIT_API_CLIENT_SECRET = "*****";
@@ -14,8 +19,12 @@ function setProps(){
   const property = PropertiesService.getScriptProperties();
   property.setProperty('HEALTHPLANET_API_CLIENT_ID',HEALTHPLANET_API_CLIENT_ID);
   property.setProperty('HEALTHPLANET_API_CLIENT_SECRET',HEALTHPLANET_API_CLIENT_SECRET);
-  property.setProperty('GOOGLE_API_CLIENT_ID',GOOGLE_API_CLIENT_ID);
-  property.setProperty('GOOGLE_API_CLIENT_SECRET',GOOGLE_API_CLIENT_SECRET);
-  property.setProperty('FITBIT_API_CLIENT_ID',FITBIT_API_CLIENT_ID);
-  property.setProperty('FITBIT_API_CLIENT_SECRET',FITBIT_API_CLIENT_SECRET);
+  if (REGIST_GOOGLE_FIT) {
+    property.setProperty('GOOGLE_API_CLIENT_ID',GOOGLE_API_CLIENT_ID);
+    property.setProperty('GOOGLE_API_CLIENT_SECRET',GOOGLE_API_CLIENT_SECRET);
+  }
+  if (REGIST_FITBIT) {
+    property.setProperty('FITBIT_API_CLIENT_ID',FITBIT_API_CLIENT_ID);
+    property.setProperty('FITBIT_API_CLIENT_SECRET',FITBIT_API_CLIENT_SECRET);
+  }
 }

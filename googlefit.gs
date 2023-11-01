@@ -1,4 +1,3 @@
-
 const googleFit = {
   "serviceName": "GoogleFit",
   "clientId": PropertiesService.getScriptProperties().getProperty('GOOGLE_API_CLIENT_ID'),
@@ -45,14 +44,12 @@ const gfAuthCallback = (request) => {
 /**
  * GoogleFitにデータソースを作成する。
  */
-const createGFDataSource = (service, dataName) => {
+const createGFDataSource = (service, dataName, model) => {
   const payload = {
-    "dataStreamName": "TanitaScales",
+    "dataStreamName": GOOGLE_FIT_DATASTREAM_NAME,
     "type": "raw",
     "application": {
-      "detailsUrl": "http://example.com",
-      "name": "GoogleFit Transmitter",
-      "version": "1"
+      "name": GOOGLE_FIT_APP_NAME
     },
     "dataType": {
       "field": [
@@ -65,10 +62,10 @@ const createGFDataSource = (service, dataName) => {
     },
     "device": {
       "manufacturer": "TANITA",
-      "model": SCALE_MODEL,
+      "model": model,
       "type": "scale",
-      "uid": "1000001",
-      "version": "1.0"
+      "uid": GOOGLE_FIT_DEVICE_UID,
+      "version": GOOGLE_FIT_DEVICE_VERSION
     }
   };
 
@@ -100,17 +97,30 @@ const createGFDataSource = (service, dataName) => {
 }
 
 /**
+ * 指定した日付（文字列）の時刻をナノ秒単位の時間に変換する
+ */
+const convertTimeNS = (dateString) => {
+  return dayjs.dayjs(dateString, "YYYYMMDDHHmm").valueOf() * 1000 * 1000;
+}
+/*
+const convertEndTimeNS = (dateString) => {
+  return dayjs.dayjs(dateString, "YYYYMMDDHHmm").endOf('minute').valueOf() * 1000 * 1000;
+}
+*/
+
+/**
  * GoogleFitへヘルスデータ（体重・体脂肪率）を登録する。
  */
-const postHealthData = (service, dataName, healthData) => {
+const postGFHealthData = (service, dataName, healthData) => {
+  createGFDataSource(service, dataName, getModelName(healthData));
 
   // 登録するデータセットの最小時刻と最大時刻を算出する
   const minTime = Math.min.apply(null, healthData.data.map((elem) => { return elem.date; })).toString();
   const maxTime = Math.max.apply(null, healthData.data.map((elem) => { return elem.date; })).toString();
-  const minTimeNs = convertUnixStartTime(minTime);
-  const maxTimeNs = convertUnixEndTime(maxTime);
+  const minTimeNs = convertTimeNS(minTime);
+  const maxTimeNs = convertTimeNS(maxTime);
 
-  payload = {
+  let payload = {
     minStartTimeNs: minTimeNs,
     maxEndTimeNs: maxTimeNs,
     dataSourceId: property.getProperty(dataName),
@@ -120,8 +130,8 @@ const postHealthData = (service, dataName, healthData) => {
   healthData.data.map((elem) => {
     if ((dataName === googleFit.weight ? BODY_WEIGHT : BODY_FAT) === elem.tag) {
       payload.point.push({
-        startTimeNanos: convertUnixStartTime(elem.date),
-        endTimeNanos: convertUnixEndTime(elem.date),
+        startTimeNanos: convertTimeNS(elem.date),
+        endTimeNanos: convertTimeNS(elem.date),
         dataTypeName: dataName,
         value: [{ fpVal: elem.keydata }]
       });
@@ -156,20 +166,6 @@ const postHealthData = (service, dataName, healthData) => {
     console.log(response.getResponseCode());
     console.log(response.getContentText());
   }
-}
-
-/**
- * 指定した日付（文字列）の開始時刻をナノ秒精度のUNIX時間に変換する。
- */
-const convertUnixStartTime = (dateString) => {
-  return dayjs.dayjs(dateString, "YYYYMMDDHHmm").unix() * TO_NS;
-}
-
-/**
- * 指定した日付（文字列）の終了時刻をナノ精度のUNIX時間に変換する。
- */
-const convertUnixEndTime = (dateString) => {
-  return dayjs.dayjs(dateString, "YYYYMMDDHHmm").unix() * TO_NS;
 }
 
 /**
@@ -274,11 +270,11 @@ const removeHealthData = () => {
 }
 
 /**
- * プロパティにGoogleFitのデータソース名をセットする（開発時用、単独で実行する）。
- * listGFDataSourceで取得したデータソース名をsetProperty第２引数に指定する。
- * 各サービスのサイトで接続を解除した後に実行する。
+ * プロパティにGoogleFitのデータソース名をセットする（開発時用）
+ * listGFDataSource で取得した dataStreamId をsetProperty第２引数に指定する
+ * removeHealthData() や removeGFDataSource() を行う前に実行する
  */
-const setDataourceToProperty = () => {
+const setDataSourceIdToProperty = () => {
   console.log(property.getProperty(googleFit.weight));
   console.log(property.getProperty(googleFit.fat));
   property.setProperty(googleFit.weight, "< dataStreamId >");
